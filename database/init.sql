@@ -5,6 +5,7 @@ DROP TABLE IF EXISTS users, tweets CASCADE;
 CREATE TABLE users (
   id SERIAL PRIMARY KEY,
   username VARCHAR(255) NOT NULL,
+  password VARCHAR(255) NOT NULL,
   age INTEGER,
   location VARCHAR(255)
 );
@@ -14,12 +15,12 @@ CREATE TABLE tweets (
   user_id INTEGER REFERENCES users(id),
   text_content TEXT
 );
-INSERT INTO users (username, age, location) VALUES
-  ('Sery1976', 28, 'Middlehill, UK'),
-  ('Notne1991', 36, 'Sunipol, UK'),
-  ('Moull1990', 41, 'Wanlip, UK'),
-  ('Spont1935', 72, 'Saxilby, UK'),
-  ('Precand', 19, 'Stanton, UK')
+INSERT INTO users (username, password, age, location) VALUES
+  ('Sery1976', 'Sery1976', 28, 'Middlehill, UK'),
+  ('Notne1991', 'Notne1991', 36, 'Sunipol, UK'),
+  ('Moull1990', 'Moull1990', 41, 'Wanlip, UK'),
+  ('Spont1935', 'Spont1935', 72, 'Saxilby, UK'),
+  ('Precand', 'Precand', 19, 'Stanton, UK')
 ;
 
 INSERT INTO tweets (text_content, user_id) VALUES

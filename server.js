@@ -1,63 +1,72 @@
 const express = require("express");
 const cookieParser = require("cookie-parser");
-const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const path = require("path");
 const db = require("./database/connection");
-// const home = require("handlers/home.js");
-// const login = require("handlers/login.js");
-// const new_post = require("hanlers/new_post.js");
-// const posts = require("handlers/posts.js");
-// const signup = require("handlers/signup.js");
-const { parse } = require("dotenv");
-const router = require("./router");
-const { user } = require("pg/lib/defaults");
-
+const jwt = require("jsonwebtoken");
+// const router = require("./router");
+const checkAuth = require("./checkAuth");
 const SECRET = process.env.SECRET;
-
 const server = express();
 
 server.use(cookieParser());
 server.use(express.urlencoded());
 
-// server.use((req, res, next) => {
-//   console.log(`${req.method} ${req.url}`);
-//   next();
-// });
-// function checkAuth(req, res, next) {
-//   const user = req.user;
-//   if (!user) {
-//     res.status(401).send(`
-//       <h1>Please log in to view this page</h1>
-//       <a href="/log-in">Log in</a>
-//       <link rel="stylesheet" href="style.css">
-//     `);
-//   } else {
-//     next();
-//   }
-// }
 server.use(express.static("public"));
-server.use(router);
-//server.listen(3000,()=>{
-// console.log("Server listening on http:localhost:3000");
-//})
+
 server.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public/home/index.html"));
 });
 server.get("/posts", (req, res) => {
   res.sendFile(path.join(__dirname, "public/posts/index.html"));
 });
-server.get("/allposts", (req, res) => {
-  //function home(req, res) {
-  db.query("SELECT text_content FROM tweets").then((result) => {
+server.get("/allposts", checkAuth, (req, res) => {
+  // function home(req, res) {
+  db.query(
+    "SELECT text_content, username FROM tweets INNER JOIN users ON tweets.user_id = users.id "
+  ).then((result) => {
     const tweets = result.rows;
-    // create a list item for each user in the array
-    //const userList = users.map(user => `<li>${user.username}</li>`);
-    // use .join to turn the array into a string
     res.status(200).send(tweets);
+  });
+  // }
+});
+server.get("/signUp", (req, res) => {
+  res.sendFile(path.join(__dirname, "public/signUp/index.html"));
+});
+server.get("/logIn", (req, res) => {
+  res.sendFile(path.join(__dirname, "public/LogIn/index.html"));
+});
+server.post("/logIn", (req, res) => {
+  const data = [req.body.username, req.body.password];
+  db.query(
+    "SELECT username , password FROM users WHERE username = $1 AND password = $2",
+    data
+  ).then(({ rows }) => {
+    console.log(rows[0]);
+    if (rows[0].username == data[0] && rows[0].password == data[1]) {
+      const payload = jwt.sign({ user: data[0] }, SECRET);
+      res.cookie("username", payload, { maxAge: "5000000000" });
+      res.redirect("/allposts");
+    } else {
+      res.send({ success: false, message: "Incorrect email or password" });
+    }
   });
 });
 
+server.post("/signUp", (req, res) => {
+  const newData = [
+    req.body.username,
+    req.body.password,
+    req.body.age,
+    req.body.location,
+  ];
+  db.query(
+    "INSERT INTO users(username, password, age, location) VALUES ($1,$2,$3,$4)",
+    newData
+  ).then(() => {
+    res.redirect("/logIn");
+  });
+});
 server.listen(3000, () =>
   console.log("Server listening on http://localhost:3000")
 );

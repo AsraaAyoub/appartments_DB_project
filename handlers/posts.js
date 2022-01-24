@@ -9,5 +9,4 @@ function posts(req, res) {
   db.query("SELECT username FROM users").then((result) => {
     const users = result.rows;
   });
-  console.log(users);
 }
