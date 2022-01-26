@@ -11,7 +11,7 @@ const server = express();
 
 server.use(cookieParser());
 server.use(express.urlencoded());
-
+server.use(express.json());
 server.use(express.static("public"));
 
 server.get("/", (req, res) => {
@@ -42,18 +42,23 @@ server.post("/logIn", (req, res) => {
     "SELECT username , password FROM users WHERE username = $1 AND password = $2",
     data
   ).then(({ rows }) => {
-    console.log(rows[0]);
-    if (rows[0].username == data[0] && rows[0].password == data[1]) {
+    console.log(rows);
+    if (
+      rows.length > 0 &&
+      rows[0].username == data[0] &&
+      rows[0].password == data[1]
+    ) {
       const payload = jwt.sign({ user: data[0] }, SECRET);
       res.cookie("username", payload, { maxAge: "5000000000" });
-      res.redirect("/allposts");
+      res.send({ success: true });
     } else {
-      res.send({ success: false, message: "Incorrect email or password" });
+      res.send({ success: false, message: "Incorrect username or password" });
     }
   });
 });
 
 server.post("/signUp", (req, res) => {
+  db.query();
   const newData = [
     req.body.username,
     req.body.password,
@@ -65,6 +70,17 @@ server.post("/signUp", (req, res) => {
     newData
   ).then(() => {
     res.redirect("/logIn");
+  });
+});
+server.get("/new_post", (req, res) => {
+  res.sendFile(path.join(__dirname, "public/new_post/index.html"));
+});
+server.post("/new_post", checkAuth, (req, res) => {
+  db.query("SELECT user_id FROM users WHERE username = 'data[0]'");
+  const newt = [data[0], req.body.tweet];
+  console.log(newt);
+  db.query("INSERT INTO tweets(text_content) VALUES ($1)", newt).then(() => {
+    res.reditect("/allposts");
   });
 });
 server.listen(3000, () =>
