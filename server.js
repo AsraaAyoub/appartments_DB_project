@@ -13,6 +13,14 @@ server.use(cookieParser());
 server.use(express.urlencoded());
 server.use(express.json());
 server.use(express.static("public"));
+server.use((req, res, next) => {
+  const token = req.cookies.username;
+  if (token) {
+    const user = jwt.verify(token, SECRET);
+    req.user = user;
+  }
+  next();
+});
 
 server.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public/home/index.html"));
@@ -58,30 +66,41 @@ server.post("/logIn", (req, res) => {
 });
 
 server.post("/signUp", (req, res) => {
-  db.query();
-  const newData = [
-    req.body.username,
-    req.body.password,
-    req.body.age,
-    req.body.location,
-  ];
-  db.query(
-    "INSERT INTO users(username, password, age, location) VALUES ($1,$2,$3,$4)",
-    newData
-  ).then(() => {
-    res.redirect("/logIn");
-  });
+  if (db.query("SELECT username FROM users WHERE username = '${username}'")) {
+    alert("username already exists");
+  } else {
+    const newData = [
+      req.body.username,
+      req.body.password,
+      req.body.age,
+      req.body.location,
+    ];
+    db.query(
+      "INSERT INTO users(username, password, age, location) VALUES ($1,$2,$3,$4)",
+      newData
+    ).then(() => {
+      res.redirect("/logIn");
+    });
+  }
 });
 server.get("/new_post", (req, res) => {
   res.sendFile(path.join(__dirname, "public/new_post/index.html"));
 });
 server.post("/new_post", checkAuth, (req, res) => {
-  db.query("SELECT user_id FROM users WHERE username = 'data[0]'");
-  const newt = [data[0], req.body.tweet];
-  console.log(newt);
-  db.query("INSERT INTO tweets(text_content) VALUES ($1)", newt).then(() => {
-    res.reditect("/allposts");
-  });
+  const username = req.user.user;
+  // const userId = {};
+  db.query(`SELECT * FROM users WHERE username = '${username}'`).then(
+    (result) => {
+      console.log(result.rows);
+      const newT = [result.rows[0].id, req.body.tweet];
+      db.query(
+        "INSERT INTO tweets(user_id, text_content) VALUES ($1,$2)",
+        newT
+      ).then(() => {
+        res.redirect("/allposts");
+      });
+    }
+  );
 });
 server.listen(3000, () =>
   console.log("Server listening on http://localhost:3000")
